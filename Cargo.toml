@@ -2,9 +2,21 @@
 name = "iced-native-frame"
 version = "0.1.0"
 edition = "2024"
+description = "A custom, theme-aware window frame for Iced with native Windows 11 caption semantics"
+license = "MIT"
 
 [dependencies]
 iced = { git = "https://github.com/iced-rs/iced", rev = "4cad51ba61e3d76a7e696ad5923d675a20994e34", features = ["svg"] }
 
+# The only native dependency. Used exclusively for the `WM_NCHITTEST` subclass
+# that gives the custom title bar its Windows 11 caption semantics; rounded
+# corners and the undecorated shadow go through `window::Settings` instead.
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61.2",features = [ "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Graphics_Dwm", "Win32_UI_HiDpi", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging" ] }
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
