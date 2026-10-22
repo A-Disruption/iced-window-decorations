@@ -13,6 +13,7 @@
 //!
 //! [`NativeFrameConfig::resize_border`]: super::config::NativeFrameConfig::resize_border
 
+use iced::Widget as _;
 use iced::widget::{column, row, space};
 use iced::{Element, Fill, Length, mouse, window};
 
@@ -44,7 +45,7 @@ where
                     window_id, direction,
                 )))
                 .interaction(interaction(direction))
-                .into();
+                .boxed();
 
         element
     };
@@ -77,7 +78,7 @@ where
     iced::widget::stack![content, handles]
         .width(Fill)
         .height(Fill)
-        .into()
+        .boxed()
 }
 
 fn interaction(direction: window::Direction) -> mouse::Interaction {

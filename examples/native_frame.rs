@@ -23,6 +23,7 @@
 //! 6. all eight resize directions
 //! 7. switching between the built-in Iced themes
 
+use iced::Widget as _;
 use iced::widget::{button, column, container, pick_list, row, rule, scrollable, space, text};
 use iced::{Center, Element, Fill, Subscription, Task, Theme, window};
 
@@ -206,7 +207,7 @@ impl App {
             iced::widget::svg(iced::widget::svg::Handle::from_memory(APP_ICON))
                 .width(Fill)
                 .height(Fill)
-                .into();
+                .boxed();
 
         self.frame.view(
             window_id,
@@ -234,7 +235,7 @@ impl App {
         .spacing(2)
         .align_y(Center)
         .width(Fill)
-        .into()
+        .boxed()
     }
 
     fn body(&self) -> Element<'_, Message> {
@@ -293,17 +294,15 @@ impl App {
         .spacing(4);
 
         let log: Element<'_, Message> = if self.log.is_empty() {
-            text("No title-bar activity yet.").into()
+            text("No title-bar activity yet.").boxed()
         } else {
-            column(self.log.iter().map(|entry| text(entry).into()))
-                .spacing(2)
-                .into()
+            column(self.log.iter().map(text)).spacing(2).boxed()
         };
 
         let mut content = column![heading];
 
         if let Some(error) = &self.install_error {
-            content = content.push(text(format!("Frame install failed: {error}")));
+            content = content.push(text(format!("Frame install failed: {error}")).boxed());
         }
 
         if self.icon_menu_open {
@@ -311,24 +310,24 @@ impl App {
         }
 
         content = content
-            .push(facts)
-            .push(rule::horizontal(1))
-            .push(theme_picker)
-            .push(rule::horizontal(1))
-            .push(instructions)
-            .push(rule::horizontal(1))
+            .push(facts.boxed())
+            .push(rule::horizontal(1).boxed())
+            .push(theme_picker.boxed())
+            .push(rule::horizontal(1).boxed())
+            .push(instructions.boxed())
+            .push(rule::horizontal(1).boxed())
             .push(log);
 
         scrollable(container(content.spacing(20)).padding(24).width(Fill))
             .height(Fill)
-            .into()
+            .boxed()
     }
 
     /// The application-owned stand-in for a system menu, used where
     /// `window::show_system_menu` does nothing.
     fn icon_menu(&self) -> Element<'_, Message> {
         let Some(window_id) = self.window_id else {
-            return space::horizontal().into();
+            return space::horizontal().boxed();
         };
 
         container(
@@ -351,7 +350,7 @@ impl App {
         )
         .padding(12)
         .style(container::bordered_box)
-        .into()
+        .boxed()
     }
 
     fn theme(&self) -> Theme {
@@ -364,9 +363,11 @@ fn menu_button(label: &'static str) -> Element<'static, Message> {
         .on_press(Message::MenuPressed(label))
         .style(button::text)
         .padding([3, 7])
-        .into()
+        .boxed()
 }
 
 fn fact(label: &'static str, value: String) -> Element<'static, Message> {
-    row![text(label).width(150), text(value)].spacing(12).into()
+    row![text(label).width(150), text(value)]
+        .spacing(12)
+        .boxed()
 }

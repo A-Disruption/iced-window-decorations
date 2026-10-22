@@ -16,6 +16,7 @@
 //! One [`NativeFrame`] serves every window. Hover, maximization and focus are
 //! tracked per window, so maximizing one leaves the others alone.
 
+use iced::Widget as _;
 use std::collections::HashMap;
 
 use iced::widget::{button, center, column, text};
@@ -138,7 +139,7 @@ impl App {
 
     fn view(&self, window_id: window::Id) -> Element<'_, Message> {
         let Some(window) = self.windows.get(&window_id) else {
-            return center(text("This window is closing.")).into();
+            return center(text("This window is closing.")).boxed();
         };
 
         let content = center(

@@ -38,7 +38,8 @@ mod style;
 pub use action::{CaptionControl, FrameAction};
 pub use config::{DecorationMode, NativeFrameConfig};
 
-use iced::widget::{column, container, mouse_area, row, space, text};
+use iced::Widget as _;
+use iced::widget::{Row, column, container, mouse_area, row, space, text};
 use iced::{Center, Element, Fill, Padding, Subscription, Task, Theme, window};
 
 use std::collections::HashMap;
@@ -435,7 +436,7 @@ impl NativeFrame {
         title: &'a str,
         window_icon: Option<Element<'a, Message>>,
         title_content: Option<Element<'a, Message>>,
-        content: impl Into<Element<'a, Message>>,
+        content: impl iced::Widget<Message> + 'a,
         map_action: impl Fn(FrameAction) -> Message + Clone + 'a,
     ) -> Element<'a, Message>
     where
@@ -444,7 +445,7 @@ impl NativeFrame {
         let config = self.config;
 
         if !config.decoration_mode.uses_custom_frame() {
-            return content.into();
+            return content.boxed();
         }
 
         let state = self.state(window_id);
@@ -459,7 +460,7 @@ impl NativeFrame {
                     title_content,
                     map_action.clone(),
                 ),
-                content.into(),
+                content,
             ]
             .width(Fill)
             .height(Fill),
@@ -476,9 +477,9 @@ impl NativeFrame {
                 .padding(padding)
                 .width(Fill)
                 .height(Fill)
-                .into()
+                .boxed()
         } else {
-            surface.into()
+            surface.boxed()
         };
 
         if config.resizable && platform::USES_OVERLAY_RESIZE_HANDLES {
@@ -506,7 +507,7 @@ impl NativeFrame {
     ///
     /// ```ignore
     /// let Some(window_id) = self.frame.primary_window() else {
-    ///     return content.into();
+    ///     return content.boxed();
     /// };
     ///
     /// self.frame.view(window_id, "Title", Some(icon), Some(menus), content, Message::Frame)
@@ -514,7 +515,7 @@ impl NativeFrame {
     pub fn decorate<'a, Message>(
         &self,
         title: &'a str,
-        content: impl Into<Element<'a, Message>>,
+        content: impl iced::Widget<Message> + 'a,
         map_action: impl Fn(FrameAction) -> Message + Clone + 'a,
     ) -> Element<'a, Message>
     where
@@ -522,7 +523,7 @@ impl NativeFrame {
     {
         match self.primary_window() {
             Some(window_id) => self.view(window_id, title, None, None, content, map_action),
-            None => content.into(),
+            None => content.boxed(),
         }
     }
 }
@@ -546,7 +547,7 @@ where
 {
     let config = state.config;
 
-    let mut bar = row![]
+    let mut bar: Row<Element<'a, Message>> = row![]
         .width(Fill)
         .height(config.title_bar_height)
         .align_y(Center);
@@ -555,14 +556,15 @@ where
     // traffic lights. Left outside the draggable region so it never competes
     // with them.
     if config.leading_inset > 0.0 {
-        bar = bar.push(space().width(config.leading_inset));
+        bar = bar.push(space().width(config.leading_inset).boxed());
     }
 
     // [ clickable icon ][ draggable title ]
     //
     // The icon's own `mouse_area` captures its press first, so clicking it
     // publishes `WindowIconPressed` instead of starting a window drag.
-    let mut leading = row![].spacing(config.title_spacing).align_y(Center);
+    let mut leading: Row<Element<'a, Message>> =
+        row![].spacing(config.title_spacing).align_y(Center);
 
     if let Some(icon) = window_icon {
         leading = leading.push(
@@ -578,12 +580,13 @@ where
             // arrow cursor.
             .on_press(map_action.clone()(FrameAction::WindowIconPressed(
                 window_id,
-            ))),
+            )))
+            .boxed(),
         );
     }
 
     if config.show_title {
-        leading = leading.push(text(title).size(13));
+        leading = leading.push(text(title).size(13).boxed());
     }
 
     let leading = container(leading)
@@ -605,9 +608,9 @@ where
             .width(Fill)
             .height(config.title_bar_height)
             .center_y(config.title_bar_height)
-            .into(),
+            .boxed(),
 
-        None => space().width(Fill).height(config.title_bar_height).into(),
+        None => space().width(Fill).height(config.title_bar_height).boxed(),
     };
 
     bar = bar.push(draggable(window_id, filler, map_action.clone()));
@@ -619,7 +622,8 @@ where
         bar = bar.push(
             row(controls)
                 .height(config.title_bar_height)
-                .align_y(Center),
+                .align_y(Center)
+                .boxed(),
         );
     }
 
@@ -627,7 +631,7 @@ where
         .width(Fill)
         .height(config.title_bar_height)
         .style(style::title_bar)
-        .into()
+        .boxed()
 }
 
 /// Wraps `content` so that a press that no child captured drags the window.
@@ -637,7 +641,7 @@ where
 /// clickable while the gaps between them remain draggable.
 fn draggable<'a, Message>(
     window_id: window::Id,
-    content: impl Into<Element<'a, Message>>,
+    content: impl iced::Widget<Message> + 'a,
     map_action: impl Fn(FrameAction) -> Message + Clone + 'a,
 ) -> Element<'a, Message>
 where
@@ -647,7 +651,7 @@ where
         .on_press(map_action.clone()(FrameAction::Drag(window_id)))
         .on_double_click(map_action.clone()(FrameAction::ToggleMaximize(window_id)))
         .on_right_press(map_action(FrameAction::ShowSystemMenu(window_id)))
-        .into()
+        .boxed()
 }
 
 fn caption_button<'a, Message>(
@@ -700,7 +704,7 @@ where
     if platform::NATIVE_CAPTION_HIT_TEST {
         let _ = (window_id, map_action);
 
-        return visual.into();
+        return visual.boxed();
     }
 
     let action = match control {
@@ -714,7 +718,7 @@ where
         .on_exit(map_action.clone()(FrameAction::Leave(window_id, control)))
         .on_press(map_action(action))
         .interaction(iced::mouse::Interaction::Pointer)
-        .into()
+        .boxed()
 }
 
 fn sync_state<Message>(
